@@ -13,3 +13,8 @@ const sequelize = new Sequelize(
 );
 
 module.exports = sequelize;
+
+// DB_NAME=your_database
+// DB_USER=your_username
+// DB_PASSWORD=your_password
+// DB_HOST=localhost
