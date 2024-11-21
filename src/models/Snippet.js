@@ -9,13 +9,17 @@ const Snippet = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    title: {
+    session_code: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     code: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
     },
     expiresAt: {
       type: DataTypes.DATE,

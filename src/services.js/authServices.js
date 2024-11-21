@@ -1,49 +1,93 @@
-const User=require('../models/User');
-const jwt=require('jsonwebtoken');
-const bcrypt=require('bcrypt');
-const { Op } = require("sequelize");
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
-const register=async (req,res)=>{
-    const {name,email,password}=req.body;
-    try {
-        const user=await User.create({name,email,password});
-        res.status(201).json({success:true,message:'User created successfully',data:user});
-    } catch (error) {
-        res.status(500).json({success:false,message:error.message});
-    }
-}
+// Helper function to generate JWT token
+const generateToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
 
-const login=async (req,res)=>{
-    const {email,password}=req.body;
+// Register a new user
+const register = async ({ name, email, password }) => {
     try {
-        const user=await User.findOne({where:{email}});
-        if(!user){
-            return res.status(404).json({success:false,message:'User not found'});
+        // Check if email already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            const error = new Error('Email already registered');
+            error.statusCode = 400;
+            throw error;
         }
-        const isMatch=await bcrypt.compare(password,user.password);
-        if(!isMatch){
-            return res.status(400).json({success:false,message:'Invalid credentials'});
-        }
-        const token=jwt.sign({id:user.id},process.env.JWT_SECRET);
-        res.status(200).json({success:true,message:'User logged in successfully',token});
-    } catch (error) {
-        res.status(500).json({success:false,message:error.message});
-    }
-}
 
-const getUser=async (req,res)=>{
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new user
+        const user = await User.create({ name, email, password: hashedPassword });
+
+        // Generate JWT token
+        const token = generateToken(user.id);
+
+        // Exclude password from returned user object
+        const { password: _, ...userWithoutPassword } = user.toJSON();
+
+        return { user: userWithoutPassword, token };
+    } catch (error) {
+        if (!error.statusCode) error.statusCode = 500; // Default to 500 if no status code is set
+        throw error;
+    }
+};
+
+// Login an existing user
+const login = async ({ email, password }) => {
     try {
-        const user=await User.findByPk(req.user.id);
-        res.status(200).json({success:true,message:'User found',data:user});
+        // Find user by email
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            const error = new Error('User not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // Compare password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            const error = new Error('Invalid credentials');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Generate JWT token
+        const token = generateToken(user.id);
+        return { token, user };
     } catch (error) {
-        res.status(500).json({success:false,message:error.message});
+        if (!error.statusCode) error.statusCode = 500; // Default to 500 if no status code is set
+        throw error;
     }
-}
+};
 
+// Get user details by user ID
+const getUser = async (userId) => {
+    try {
+        // Fetch user by ID
+        const user = await User.findByPk(userId, {
+            attributes: { exclude: ['password'] }, // Exclude password from the response
+        });
 
-// export 
-module.exports={
+        if (!user) {
+            const error = new Error('User not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        return user;
+    } catch (error) {
+        if (!error.statusCode) error.statusCode = 500; // Default to 500 if no status code is set
+        throw error;
+    }
+};
+
+module.exports = {
     register,
     login,
-    getUser
-}
+    getUser,
+};
