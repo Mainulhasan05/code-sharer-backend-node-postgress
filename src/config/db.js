@@ -1,6 +1,9 @@
-require("dotenv").config();
 const { Sequelize } = require("sequelize");
+const fs = require("fs");
+const path = require("path");
 
+console.log(process.env.DB_NAME);
+// Initialize Sequelize instance
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -8,13 +11,22 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST || "localhost",
     dialect: "postgres",
-    logging: false, // Set to true if you want query logs
+    logging: false, // Disable query logs
   }
 );
 
-module.exports = sequelize;
+// Dynamically load all models
+const models = {};
+const modelsDir = path.join(__dirname, "../models");
 
-// DB_NAME=your_database
-// DB_USER=your_username
-// DB_PASSWORD=your_password
-// DB_HOST=localhost
+fs.readdirSync(modelsDir)
+  .filter((file) => file.endsWith(".js") && file !== "associations.js")
+  .forEach((file) => {
+    const model = require(path.join(modelsDir, file))(sequelize, Sequelize.DataTypes);
+    models[model.name] = model;
+  });
+
+// Apply associations
+require("../models/associations")(models);
+
+module.exports = { sequelize, models };

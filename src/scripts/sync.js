@@ -1,5 +1,4 @@
-const sequelize = require("../config/db");
-const { User, Snippet, Subscription, View } = require("../models/associations");
+const { sequelize, models } = require("../config/db");
 
 (async () => {
   try {

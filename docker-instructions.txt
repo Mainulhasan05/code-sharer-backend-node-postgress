@@ -1,0 +1,44 @@
+To connect pgAdmin (running on Docker) to your PostgreSQL container, follow these steps:
+
+1. Check the Status of Your PostgreSQL Container
+Ensure that your PostgreSQL container is running by using the following command:
+
+bash
+Copy code
+docker ps
+This should show the postgres-container running with the port 5432 exposed.
+
+2. Open pgAdmin in Your Browser
+You mentioned that pgAdmin is running on port 8080. Open your browser and go to:
+
+arduino
+Copy code
+http://localhost:8080
+Log in using the credentials you set in the environment variables for pgAdmin:
+
+Email: admin@admin.com
+Password: admin
+3. Add a New Server in pgAdmin
+Once you are logged into pgAdmin, you need to add a new server to connect it to your PostgreSQL container.
+
+In pgAdmin, click on the Add New Server button (the "Server" button on the top left).
+
+In the Create - Server dialog, configure the following settings:
+
+General Tab:
+
+Name: Give a name to your server (e.g., PostgreSQL).
+Connection Tab:
+
+Host name/address: host.docker.internal (This allows pgAdmin to access the PostgreSQL container from the Docker network).
+Port: 5432 (since you've mapped port 5432 on your container to 5432 on your host).
+Maintenance database: postgres (default database in PostgreSQL).
+Username: postgres (default PostgreSQL username).
+Password: admin (the password you set when running the container).
+Make sure to check the box Save Password if you don’t want to enter the password every time.
+
+Click Save to add the server.
+
+4. Verify Connection
+Once the server is added, pgAdmin will attempt to connect to your PostgreSQL container. If everything is configured correctly, you should see the PostgreSQL database server listed in pgAdmin's left sidebar, and you can start managing the database.
+
