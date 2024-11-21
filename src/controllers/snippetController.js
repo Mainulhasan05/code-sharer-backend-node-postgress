@@ -16,14 +16,14 @@ const createSnippet = async (req, res) => {
 const updateSnippet = async (req, res) => {
     const { snippetId } = req.params;
     const { title, code, expiresAt } = req.body;
-    const userId = req.user.id; // Assuming userId is available in the request object after authentication
+    const userId = req?.user?.id; // Assuming userId is available in the request object after authentication
 
     try {
         const updatedSnippet = await snippetServices.updateSnippet(snippetId, {
             title,
             code,
             expiresAt,
-            userId,
+            ...(userId && { userId }),
         });
         sendResponse(res, 200, true, 'Snippet updated successfully', updatedSnippet);
     } catch (error) {

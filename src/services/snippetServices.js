@@ -1,4 +1,6 @@
-const Snippet = require('../models/Snippet');
+const { models } = require('../config/db');
+const { Snippet } = models;
+
 
 // Function to generate a random 6-character session code (numbers and both uppercase and lowercase letters)
 const generateSessionCode = () => {
@@ -12,6 +14,8 @@ const generateSessionCode = () => {
 
 // Function to ensure the session code is unique
 const isSessionCodeUnique = async (sessionCode) => {
+    
+    
     const snippet = await Snippet.findOne({ where: { session_code: sessionCode } });
     return !snippet; // Return true if code is unique, false if it already exists
 };
@@ -43,7 +47,10 @@ const createSnippet = async (userId) => {
 // Service to update an existing snippet
 const updateSnippet = async (snippetId, { title, code, expiresAt, userId }) => {
     try {
-        const snippet = await Snippet.findOne({ where: { id: snippetId, userId } });
+        console.log(snippetId);
+        
+        const snippet = await Snippet.findOne({ where: { id: snippetId, } });
+        
 
         if (!snippet) {
             const error = new Error('Snippet not found or you are not authorized to update it.');

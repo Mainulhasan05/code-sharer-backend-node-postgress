@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       expiresAt: {
         type: DataTypes.DATE,
         allowNull: true,
+        defaultValue: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
       },
       userId: {
         type: DataTypes.INTEGER,
