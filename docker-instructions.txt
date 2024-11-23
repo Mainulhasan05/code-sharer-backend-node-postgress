@@ -42,3 +42,4 @@ Click Save to add the server.
 4. Verify Connection
 Once the server is added, pgAdmin will attempt to connect to your PostgreSQL container. If everything is configured correctly, you should see the PostgreSQL database server listed in pgAdmin's left sidebar, and you can start managing the database.
 
+docker run --name postgres-container -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres

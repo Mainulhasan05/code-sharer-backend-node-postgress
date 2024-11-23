@@ -4,11 +4,16 @@ const { models, sequelize } = require("./config/db");
 
 // Import routes
 const snippetRoutes = require("./routes/snippetRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const cors = require("cors");
+const http = require("http"); // Required to create the HTTP server for socket.io
+const socketHandler = require("./scripts/socket"); // Import socket handler
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,8 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 (async () => {
   try {
     await sequelize.authenticate();
-    // sequelize.sync({ force: true });
-    await sequelize.sync({ alter: true }); // Use force: true to drop and recreate the tables
+    await sequelize.sync({ alter: true });
     console.log("Database synchronized.");
     console.log("Database connected successfully.");
   } catch (error) {
@@ -28,13 +32,27 @@ app.use(express.urlencoded({ extended: true }));
 
 // Example route
 app.get("/", async (req, res) => {
-  const users = await models.User.findAll();
+  const users = await models.Snippet.findAll();
   res.json(users);
 });
 
-// Use snippet routes
+// Use routes
+app.use("/auth", authRoutes);
 app.use("/snippets", snippetRoutes);
 
-app.listen(PORT, () => {
+// Create HTTP server and integrate Socket.IO
+const server = http.createServer(app);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "*", // Replace '*' with your frontend domain in production
+    methods: ["GET", "POST"],
+  },
+});
+
+// Pass the `io` instance to the socket handler
+socketHandler(io);
+
+// Start the server
+server.listen(PORT, () => {
   console.log(`App is running on http://localhost:${PORT}`);
 });
