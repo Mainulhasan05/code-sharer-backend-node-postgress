@@ -32,8 +32,24 @@ app.use(express.urlencoded({ extended: true }));
 
 // Example route
 app.get("/", async (req, res) => {
-  const users = await models.Snippet.findAll();
-  res.json(users);
+  return res.json({
+    message: "Welcome to the CodeShare API!",
+  });
+});
+
+// get snippets, use pagination
+app.get("/snippets", async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const offset = (page - 1) * limit;
+  try {
+    const snippets = await models.Snippet.findAndCountAll({
+      limit: +limit,
+      offset: +offset,
+    });
+    return res.json(snippets);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 // Use routes
