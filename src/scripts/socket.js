@@ -54,11 +54,16 @@ module.exports = (io) => {
         }
 
         // Broadcast the updated code to all users in the session, including the sender
-        io.in(sessionId).emit("sessionUpdate", {
+        socket.to(sessionId).emit("sessionUpdate", {
           sessionId,
           code,
           updatedBy: socket.id,
         });
+        // io.in(sessionId).emit("sessionUpdate", {
+        //   sessionId,
+        //   code,
+        //   updatedBy: socket.id,
+        // });
 
         // Clear any existing debounce timer for the session
         if (debounceTimers[sessionId]) {
@@ -78,7 +83,7 @@ module.exports = (io) => {
           } finally {
             delete debounceTimers[sessionId]; // Cleanup the timer
           }
-        }, 1000); // 1-second debounce delay
+        }, 500); // 1-second debounce delay
 
         // Acknowledge successful broadcast
         callback({ code, success: true });
