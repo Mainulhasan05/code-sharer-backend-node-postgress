@@ -49,8 +49,6 @@ const createSnippet = async (userId) => {
 // Service to update an existing snippet
 const updateSnippet = async (snippetId, { title, code, expiresAt, userId }) => {
   try {
-    console.log(snippetId);
-
     const snippet = await Snippet.findOne({ where: { id: snippetId } });
 
     if (!snippet) {

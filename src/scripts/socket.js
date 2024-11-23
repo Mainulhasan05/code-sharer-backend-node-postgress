@@ -1,6 +1,8 @@
 const snippetServices = require("../services/snippetServices");
 
 module.exports = (io) => {
+  const debounceTimers = {}; // Map to store debounce timers by sessionId
+
   io.on("connection", (socket) => {
     // Generate a session code
     socket.on("generateSessionCode", async (data, callback) => {
@@ -43,27 +45,42 @@ module.exports = (io) => {
       }
     });
 
-    // Update session code in real-time
-    socket.on("updateSession", async ({ sessionId, code }, callback) => {
+    // Update session code in real-time with debounce
+    socket.on("updateSession", ({ sessionId, code }, callback) => {
       try {
-        if (!sessionId || !code) {
-          console.error(
-            "Error: sessionId and code are required for updateSession."
-          );
+        if (!sessionId) {
+          console.error("Error: sessionId is required for updateSession.");
           return callback({ success: false, message: "Invalid input." });
         }
 
-        // Persist the updated code in the database
-        await snippetServices.updateSnippet(sessionId, { code });
-
         // Broadcast the updated code to all users in the session, including the sender
         io.in(sessionId).emit("sessionUpdate", {
-          sessionId, // Include the session ID for context
-          code, // Send the updated code
-          updatedBy: socket.id, // Optional: Include the ID of the user who made the update
+          sessionId,
+          code,
+          updatedBy: socket.id,
         });
 
-        // Acknowledge successful update
+        // Clear any existing debounce timer for the session
+        if (debounceTimers[sessionId]) {
+          clearTimeout(debounceTimers[sessionId]);
+        }
+
+        // Set a new debounce timer for the session
+        debounceTimers[sessionId] = setTimeout(async () => {
+          try {
+            // Persist the updated code in the database
+            await snippetServices.updateSnippet(sessionId, { code });
+          } catch (error) {
+            console.error(
+              `Error updating database for session ${sessionId}:`,
+              error
+            );
+          } finally {
+            delete debounceTimers[sessionId]; // Cleanup the timer
+          }
+        }, 1000); // 1-second debounce delay
+
+        // Acknowledge successful broadcast
         callback({ code, success: true });
       } catch (error) {
         console.error(`Error updating session ${sessionId}:`, error);
@@ -73,7 +90,6 @@ module.exports = (io) => {
 
     // Handle general messages
     socket.on("message", (data) => {
-      // Broadcast the message to all connected clients
       io.emit("message", data);
     });
 
