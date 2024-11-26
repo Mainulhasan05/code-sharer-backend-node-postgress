@@ -4,13 +4,25 @@ const { User } = models;
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+// codesharer_token
+const setAuthCookie = (res, token) => {
+  res.cookie("codesharer_token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms,
+    domain: process.env.COOKIE_DOMAIN, // set domain in production
+    path: "/", // apply cookie to all paths
+  });
+};
+
 // Helper function to generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
+const generateToken = (userId, expiresIn = "60m") => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn });
 };
 
 // Register a new user
-const register = async ({ name, email, password }) => {
+const register = async ({ res, name, email, password }) => {
   try {
     // Check if email already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -28,6 +40,7 @@ const register = async ({ name, email, password }) => {
 
     // Generate JWT token
     const token = generateToken(user.id);
+    const refreshToken = generateToken(user.id, "7d");
 
     // Exclude password from returned user object
     const { password: _, ...userWithoutPassword } = user.toJSON();
@@ -40,7 +53,7 @@ const register = async ({ name, email, password }) => {
 };
 
 // Login an existing user
-const login = async ({ email, password }) => {
+const login = async ({ res, email, password }) => {
   try {
     // Find user by email
     const user = await User.findOne({ where: { email } });
@@ -60,6 +73,8 @@ const login = async ({ email, password }) => {
 
     // Generate JWT token
     const token = generateToken(user.id);
+    const refreshToken = generateToken(user.id, "7d");
+    setAuthCookie(res, refreshToken);
     // send user without password
     const { password: _, ...userWithoutPassword } = user.toJSON();
 

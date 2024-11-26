@@ -1,5 +1,7 @@
 const { models } = require("../config/db");
 const { Snippet } = models;
+// define Op
+const { Op } = require("sequelize");
 
 // Function to generate a random 6-character session code (numbers and both uppercase and lowercase letters)
 const generateSessionCode = () => {
@@ -91,8 +93,77 @@ const getSnippetBySessionCode = async (sessionCode) => {
   }
 };
 
+// Service to get user snippets with pagination, sorting, and search
+// Service to get user snippets with pagination, sorting, and search
+const getUserSnippets = async (userId, query) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      order = "DESC",
+      search = "",
+    } = query;
+
+    // Pagination parameters
+    const offset = (page - 1) * limit;
+
+    // Search condition
+    const searchCondition = {
+      [Op.or]: [
+        { title: { [Op.like]: `%${search}%` } },
+        { code: { [Op.like]: `%${search}%` } },
+        { session_code: { [Op.like]: `%${search}%` } },
+      ],
+    };
+
+    // Fetch snippets with pagination, sorting, and search
+    const { count, rows } = await Snippet.findAndCountAll({
+      where: {
+        userId,
+        ...searchCondition,
+      },
+      order: [[sortBy, order]], // Default: Sort by createdAt in descending order
+      offset,
+      limit: parseInt(limit, 10),
+    });
+
+    return {
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page, 10),
+      snippets: rows,
+    };
+  } catch (error) {
+    throw new Error("Error fetching user snippets: " + error.message);
+  }
+};
+
+// deleteSnippet function
+const deleteSnippet = async (snippetId, userId) => {
+  try {
+    const snippet = await Snippet.findOne({
+      where: { id: snippetId, userId },
+    });
+
+    if (!snippet) {
+      const error = new Error(
+        "Snippet not found or you are not authorized to delete it."
+      );
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await snippet.destroy();
+  } catch (error) {
+    throw new Error("Error deleting snippet: " + error.message);
+  }
+};
+
 module.exports = {
   createSnippet,
   updateSnippet,
   getSnippetBySessionCode,
+  getUserSnippets,
+  deleteSnippet,
 };

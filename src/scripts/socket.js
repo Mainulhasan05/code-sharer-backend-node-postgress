@@ -1,4 +1,5 @@
 const snippetServices = require("../services/snippetServices");
+const getUserIdByToken = require("../middlewares/getUserIdByToken");
 
 module.exports = (io) => {
   const debounceTimers = {}; // Map to store debounce timers by sessionId
@@ -7,8 +8,8 @@ module.exports = (io) => {
     // Generate a session code
     socket.on("generateSessionCode", async (data, callback) => {
       try {
-        const { userId } = data;
-
+        const { token } = data;
+        const userId = getUserIdByToken(token);
         const result = await snippetServices.createSnippet(userId);
 
         if (!result || !result.session_code) {

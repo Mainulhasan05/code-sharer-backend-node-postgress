@@ -6,7 +6,7 @@ const register = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const user = await authServices.register({ name, email, password });
+    const user = await authServices.register({ res, name, email, password });
     sendResponse(res, 201, true, "User created successfully", user);
   } catch (error) {
     // Use error codes from the service if available
@@ -20,7 +20,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const data = await authServices.login({ email, password });
+    const data = await authServices.login({ res, email, password });
     sendResponse(res, 200, true, "User logged in successfully", data);
   } catch (error) {
     const statusCode = error.statusCode || 500;
